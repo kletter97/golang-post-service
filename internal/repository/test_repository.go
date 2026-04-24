@@ -1,7 +1,5 @@
 package repository
 
-import "fmt"
-
 type testRepository struct{}
 
 func NewTestRepository() TestRepository {
