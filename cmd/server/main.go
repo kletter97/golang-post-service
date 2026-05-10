@@ -13,26 +13,54 @@ import (
 	deliveryHTTP "post-service/internal/delivery/http"
 	"post-service/internal/repository"
 	"post-service/internal/service"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
+	log.Println("🚀 Application starting...")
 
-	// слой 3 (repository)
-	testRepo := repository.NewTestRepository()
+	// DB connection
+	dbURL := "postgres://postgres:postgres@localhost:5432/postgres"
 
-	// слой 2 (service)
+	log.Println("🔌 Connecting to database...")
+
+	dbpool, err := pgxpool.New(context.Background(), dbURL)
+	if err != nil {
+		log.Fatalf("❌ Unable to connect to database: %v", err)
+	}
+	defer dbpool.Close()
+
+	log.Println("✅ Database connected")
+
+	// Init tables
+	log.Println("🛠 Initializing database tables...")
+
+	err = repository.InitTables(context.Background(), dbpool)
+	if err != nil {
+		log.Fatalf("❌ Failed to init tables: %v", err)
+	}
+
+	log.Println("✅ Tables initialized")
+
+	// Repository
+	testRepo := repository.NewPostgresRepository(dbpool)
+
+	// Service
 	testService := service.NewTestService(testRepo)
 
-	// слой 1 (delivery)
+	// Handler
 	testHandler := deliveryHTTP.NewTestHandler(testService)
 
-	// Регистрация маршрутов
+	// Routes
 	mux := http.NewServeMux()
 	testHandler.RegisterRoutes(mux)
 
+	log.Println("🌐 Routes registered")
 
-	// Настройка http-сервера
-	port := ":8080"
+	// Server config
+	port := ":8090"
+
 	server := &http.Server{
 		Addr:         port,
 		Handler:      mux,
@@ -41,35 +69,33 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-
-	// Graceful Shutdown
-
-	// Канал для перехвата OS-сигналов
+	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
-
-	// signal.Notify перенаправляет сигналы в канал quit
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	// Запускаем сервер в горутине, чтобы не блокировать main
+	// Start server
 	go func() {
-		fmt.Printf("Server is starting on port %s...\n", port)
-		fmt.Printf("Test endpoint: http://localhost%s/test\n", port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+		log.Printf("🚀 Server is running on http://localhost%s", port)
+
+		if err := server.ListenAndServe(); err != nil &&
+			err != http.ErrServerClosed {
+			log.Fatalf("❌ Server failed: %v", err)
 		}
 	}()
 
-	// Блокируемся до получения сигнала завершения
+	// Wait signal
 	sig := <-quit
-	fmt.Printf("\nReceived signal: %v. Shutting down gracefully...\n", sig)
+	log.Printf("📡 Received signal: %v", sig)
 
-	// 30 секунд на завершение активных запросов
+	log.Println("🛑 Shutting down server...")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		log.Fatalf("❌ Forced shutdown: %v", err)
 	}
 
-	fmt.Println("Server stopped gracefully")
+	log.Println("✅ Server stopped gracefully")
+	fmt.Println("Bye 👋")
 }
