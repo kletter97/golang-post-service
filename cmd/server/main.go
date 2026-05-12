@@ -18,30 +18,30 @@ import (
 )
 
 func main() {
-	log.Println("🚀 Application starting...")
+	log.Println("Application starting...")
 
 	// DB connection
 	dbURL := "postgres://postgres:postgres@localhost:5432/postgres"
 
-	log.Println("🔌 Connecting to database...")
+	log.Println("Connecting to database...")
 
 	dbpool, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
-		log.Fatalf("❌ Unable to connect to database: %v", err)
+		log.Fatalf("Unable to connect to database: %v", err)
 	}
 	defer dbpool.Close()
 
-	log.Println("✅ Database connected")
+	log.Println("Database connected")
 
 	// Init tables
-	log.Println("🛠 Initializing database tables...")
+	log.Println("Initializing database tables...")
 
 	err = repository.InitTables(context.Background(), dbpool)
 	if err != nil {
-		log.Fatalf("❌ Failed to init tables: %v", err)
+		log.Fatalf("Failed to init tables: %v", err)
 	}
 
-	log.Println("✅ Tables initialized")
+	log.Println("Tables initialized")
 
 	// Repository
 	testRepo := repository.NewPostgresRepository(dbpool)
@@ -56,7 +56,7 @@ func main() {
 	mux := http.NewServeMux()
 	testHandler.RegisterRoutes(mux)
 
-	log.Println("🌐 Routes registered")
+	log.Println("Routes registered")
 
 	// Server config
 	port := ":8090"
@@ -75,27 +75,27 @@ func main() {
 
 	// Start server
 	go func() {
-		log.Printf("🚀 Server is running on http://localhost%s", port)
+		log.Printf("Server is running on http://localhost%s", port)
 
 		if err := server.ListenAndServe(); err != nil &&
 			err != http.ErrServerClosed {
-			log.Fatalf("❌ Server failed: %v", err)
+			log.Fatalf("Server failed: %v", err)
 		}
 	}()
 
 	// Wait signal
 	sig := <-quit
-	log.Printf("📡 Received signal: %v", sig)
+	log.Printf("Received signal: %v", sig)
 
-	log.Println("🛑 Shutting down server...")
+	log.Println("Shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("❌ Forced shutdown: %v", err)
+		log.Fatalf("Forced shutdown: %v", err)
 	}
 
-	log.Println("✅ Server stopped gracefully")
-	fmt.Println("Bye 👋")
+	log.Println("Server stopped gracefully")
+	fmt.Println("Bye")
 }
