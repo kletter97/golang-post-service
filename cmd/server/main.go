@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 	"post-service/internal/repository"
 	"post-service/internal/service"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -25,18 +26,23 @@ func main() {
 
 	log.Println("Connecting to database...")
 
-	dbpool, err := pgxpool.New(context.Background(), dbURL)
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v", err)
 	}
-	defer dbpool.Close()
+	defer db.Close()
+
+	// Test connection
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Unable to ping database: %v", err)
+	}
 
 	log.Println("Database connected")
 
 	// Init tables
 	log.Println("Initializing database tables...")
 
-	err = repository.InitTables(context.Background(), dbpool)
+	err = repository.InitTables(context.Background(), db)
 	if err != nil {
 		log.Fatalf("Failed to init tables: %v", err)
 	}
@@ -44,17 +50,23 @@ func main() {
 	log.Println("Tables initialized")
 
 	// Repository
-	testRepo := repository.NewPostgresRepository(dbpool)
+	testRepo := repository.NewPostgresRepository(db)
+	userRepo := repository.NewPostgresUserRepository(db)
 
 	// Service
 	testService := service.NewTestService(testRepo)
+	passwordHasher := service.NewBcryptHasher()
+	tokenGenerator := service.NewJWTTokenGenerator("your-secret-key", 24*time.Hour)
+	userService := service.NewUserService(userRepo, "your-secret-key", passwordHasher, tokenGenerator)
 
 	// Handler
 	testHandler := deliveryHTTP.NewTestHandler(testService)
+	userHandler := deliveryHTTP.NewUserHandler(userService)
 
 	// Routes
 	mux := http.NewServeMux()
 	testHandler.RegisterRoutes(mux)
+	userHandler.RegisterRoutes(mux)
 
 	log.Println("Routes registered")
 
