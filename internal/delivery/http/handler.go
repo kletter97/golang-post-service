@@ -40,7 +40,7 @@ func (h *TestHandler) Test(
 		return
 	}
 
-	greeting, err := h.testService.GetGreeting(r.Context())
+	greeting, err := h.testService.GetMessages(r.Context())
 	if err != nil {
 		http.Error(
 			w,

@@ -21,7 +21,7 @@ func main() {
 	log.Println("Application starting...")
 
 	// DB connection
-	dbURL := "postgres://postgres:postgres@localhost:5432/postgres"
+	dbURL := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 
 	log.Println("Connecting to database...")
 

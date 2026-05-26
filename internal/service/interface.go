@@ -7,8 +7,11 @@ import (
 )
 
 type TestService interface {
-
 	GetGreeting(
+		ctx context.Context,
+	) (string, error)
+
+	GetMessages(
 		ctx context.Context,
 	) (string, error)
 
@@ -36,6 +39,13 @@ func (s *testService) GetGreeting(
 ) (string, error) {
 
 	return s.repo.GetGreeting(ctx)
+}
+
+func (s *testService) GetMessages(
+	ctx context.Context,
+) (string, error) {
+
+	return s.repo.GetMessages(ctx)
 }
 
 func (s *testService) SaveMessage(
