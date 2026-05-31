@@ -2,13 +2,13 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/lib/pq"
 )
 
 type Message struct {
@@ -18,13 +18,10 @@ type Message struct {
 }
 
 type postgresRepository struct {
-	db *pgxpool.Pool
+	db *sql.DB
 }
 
-func NewPostgresRepository(
-	db *pgxpool.Pool,
-) TestRepository {
-
+func NewPostgresRepository(db *sql.DB) TestRepository {
 	return &postgresRepository{
 		db: db,
 	}
@@ -47,11 +44,7 @@ func (r *postgresRepository) SaveMessage(
 		VALUES ($1)
 	`
 
-	_, err := r.db.Exec(
-		ctx,
-		query,
-		message,
-	)
+	_, err := r.db.ExecContext(ctx, query, message)
 
 	log.Printf("Something posted")
 
@@ -63,15 +56,23 @@ func (r *postgresRepository) GetMessages(
 ) (string, error) {
 	query := `SELECT id, message, created_at FROM messages ORDER BY created_at DESC`
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return "", fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	messages, err := pgx.CollectRows(rows, pgx.RowToStructByName[Message])
-	if err != nil {
-		return "", fmt.Errorf("collect rows failed: %w", err)
+	var messages []Message
+	for rows.Next() {
+		var msg Message
+		if err := rows.Scan(&msg.ID, &msg.Message, &msg.CreatedAt); err != nil {
+			return "", fmt.Errorf("scan failed: %w", err)
+		}
+		messages = append(messages, msg)
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", fmt.Errorf("rows error: %w", err)
 	}
 
 	jsonData, err := json.Marshal(messages)

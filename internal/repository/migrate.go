@@ -2,13 +2,14 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/lib/pq"
 )
 
 func InitTables(
 	ctx context.Context,
-	db *pgxpool.Pool,
+	db *sql.DB,
 ) error {
 
 	query := `
@@ -16,10 +17,17 @@ func InitTables(
 		id SERIAL PRIMARY KEY,
 		message TEXT NOT NULL,
 		created_at TIMESTAMP DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		email TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		created_at TIMESTAMP DEFAULT NOW()
 	)
 	`
 
-	_, err := db.Exec(ctx, query)
+	_, err := db.ExecContext(ctx, query)
 
 	return err
 }

@@ -1,1 +1,63 @@
+```
+# Go build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.out
+
+# Go cache and tools
+go.mod.lock
+go.sum.lock
+*.mod
+*.sum
+vendor/
+
+# Dependencies
+node_modules/
+**/vendor/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Build directories
+dist/
+build/
+target/
+bin/
+
+# Python (if co-existing)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+*.so
+.Python
+```
