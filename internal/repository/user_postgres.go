@@ -2,18 +2,18 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type postgresUserRepository struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
-func NewPostgresUserRepository(db *sql.DB) UserRepository {
+func NewPostgresUserRepository(db *pgxpool.Pool) UserRepository {
 	return &postgresUserRepository{
 		db: db,
 	}
@@ -27,7 +27,7 @@ func (r *postgresUserRepository) Create(ctx context.Context, email, passwordHash
 	`
 
 	user := &User{}
-	err := r.db.QueryRowContext(ctx, query, email, passwordHash).Scan(&user.ID, &user.Email)
+	err := r.db.QueryRow(ctx, query, email, passwordHash).Scan(&user.ID, &user.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
@@ -39,9 +39,9 @@ func (r *postgresUserRepository) GetByEmail(ctx context.Context, email string) (
 	query := `SELECT id, email, password_hash FROM users WHERE email = $1`
 
 	user := &User{}
-	err := r.db.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Email, &user.Password)
+	err := r.db.QueryRow(ctx, query, email).Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errors.New("user not found")
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
@@ -54,9 +54,9 @@ func (r *postgresUserRepository) GetByID(ctx context.Context, id int64) (*User, 
 	query := `SELECT id, email, password_hash FROM users WHERE id = $1`
 
 	user := &User{}
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&user.ID, &user.Email, &user.Password)
+	err := r.db.QueryRow(ctx, query, id).Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errors.New("user not found")
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)

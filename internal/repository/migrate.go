@@ -2,14 +2,13 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func InitTables(
 	ctx context.Context,
-	db *sql.DB,
+	db *pgxpool.Pool,
 ) error {
 
 	query := `
@@ -27,7 +26,7 @@ func InitTables(
 	)
 	`
 
-	_, err := db.ExecContext(ctx, query)
+	_, err := db.Exec(ctx, query)
 
 	return err
 }
