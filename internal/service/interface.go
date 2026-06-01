@@ -68,9 +68,9 @@ type UserService interface {
 }
 
 type userService struct {
-	userRepo     repository.UserRepository
-	jwtSecret    string
-	passwordHash PasswordHasher
+	userRepo       repository.UserRepository
+	jwtSecret      string
+	passwordHash   PasswordHasher
 	tokenGenerator TokenGenerator
 }
 
@@ -90,9 +90,9 @@ func NewUserService(
 	tokenGenerator TokenGenerator,
 ) UserService {
 	return &userService{
-		userRepo:     userRepo,
-		jwtSecret:    jwtSecret,
-		passwordHash: passwordHash,
+		userRepo:       userRepo,
+		jwtSecret:      jwtSecret,
+		passwordHash:   passwordHash,
 		tokenGenerator: tokenGenerator,
 	}
 }
@@ -141,4 +141,31 @@ type serviceError struct {
 
 func (e *serviceError) Error() string {
 	return e.message
+}
+
+// ===== Post Service =====
+
+type PostService interface {
+	Create(ctx context.Context, author_id int64, content string) (*repository.Post, error)
+}
+
+type postService struct {
+	postRepo repository.PostRepository
+}
+
+func NewPostService(
+	postRepo repository.PostRepository,
+) PostService {
+	return &postService{
+		postRepo: postRepo,
+	}
+}
+
+func (s *postService) Create(ctx context.Context, author_id int64, content string) (*repository.Post, error) {
+	post, err := s.postRepo.Create(ctx, author_id, content)
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
 }

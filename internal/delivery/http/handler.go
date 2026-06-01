@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"post-service/internal/service"
 )
@@ -247,4 +248,71 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/register", h.Register)
 	mux.HandleFunc("/login", h.Login)
+}
+
+// ===== Post handler =====
+
+type PostHandler struct {
+	postService service.PostService
+}
+
+func NewPostHandler(postService service.PostService) *PostHandler {
+	return &PostHandler{
+		postService: postService,
+	}
+}
+
+type createPostRequest struct {
+	AuthorID string `json:"author_id"`
+	Content  string `json:"content"`
+}
+
+type createPostResponse struct {
+	AuthorID int64  `json:"author_id"`
+	Content  string `json:"content"`
+	Status   string `json:"status"`
+}
+
+func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req createPostRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.AuthorID == "" || req.Content == "" {
+		http.Error(w, "AuthorID and content are required", http.StatusBadRequest)
+		return
+	}
+
+	AuthorID, err := strconv.ParseInt(req.AuthorID, 10, 64)
+	if err != nil {
+		http.Error(w, "AuthorID must be a number", http.StatusBadRequest)
+		return
+	}
+
+	post, err := h.postService.Create(r.Context(), AuthorID, req.Content)
+	if err != nil {
+		http.Error(w, "Failed to create post", http.StatusInternalServerError)
+		return
+	}
+
+	response := createPostResponse{
+		AuthorID: post.AuthorID,
+		Content:  post.Content,
+		Status:   post.Status,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *PostHandler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/createpost", h.Create)
 }

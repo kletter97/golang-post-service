@@ -47,21 +47,25 @@ func main() {
 	// Repository
 	testRepo := repository.NewPostgresRepository(dbpool)
 	userRepo := repository.NewPostgresUserRepository(dbpool)
+	postRepo := repository.NewPostgresPostRepository(dbpool)
 
 	// Service
 	testService := service.NewTestService(testRepo)
 	passwordHasher := service.NewBcryptHasher()
 	tokenGenerator := service.NewJWTTokenGenerator("some-secret-key", 24*time.Hour)
 	userService := service.NewUserService(userRepo, "some-secret-key", passwordHasher, tokenGenerator)
+	postService := service.NewPostService(postRepo)
 
 	// Handler
 	testHandler := deliveryHTTP.NewTestHandler(testService)
 	userHandler := deliveryHTTP.NewUserHandler(userService)
+	postHandler := deliveryHTTP.NewPostHandler(postService)
 
 	// Routes
 	mux := http.NewServeMux()
 	testHandler.RegisterRoutes(mux)
 	userHandler.RegisterRoutes(mux)
+	postHandler.RegisterRoutes(mux)
 
 	log.Println("Routes registered")
 
