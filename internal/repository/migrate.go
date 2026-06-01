@@ -23,14 +23,14 @@ func InitTables(
 		email TEXT NOT NULL UNIQUE,
 		password_hash TEXT NOT NULL,
 		created_at TIMESTAMP DEFAULT NOW()
-	)
+	);
 
 	CREATE TABLE IF NOT EXISTS posts (
 		id SERIAL PRIMARY KEY,
 		author_id INTEGER REFERENCES users (id),
 		content TEXT NOT NULL,
 		created_at TIMESTAMP DEFAULT NOW()
-	)
+	);
 	`
 
 	_, err := db.Exec(ctx, query)
