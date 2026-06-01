@@ -12,6 +12,8 @@ func InitTables(
 ) error {
 
 	query := `
+	CREATE TYPE post_status AS ENUM ('draft', 'pending', 'published', 'rejected');
+
 	CREATE TABLE IF NOT EXISTS messages (
 		id SERIAL PRIMARY KEY,
 		message TEXT NOT NULL,
@@ -28,7 +30,7 @@ func InitTables(
 	CREATE TABLE IF NOT EXISTS posts (
 		id SERIAL PRIMARY KEY,
 		author_id INTEGER REFERENCES users (id),
-		content TEXT NOT NULL,
+		content post_status NOT NULL DEFAULT 'draft',
 		created_at TIMESTAMP DEFAULT NOW()
 	);
 	`
