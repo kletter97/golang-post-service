@@ -147,6 +147,7 @@ func (e *serviceError) Error() string {
 
 type PostService interface {
 	Create(ctx context.Context, author_id int64, content string) (*repository.Post, error)
+	GetPostsByAuthor(ctx context.Context, author_id int64) ([]repository.Post, error)
 }
 
 type postService struct {
@@ -163,6 +164,15 @@ func NewPostService(
 
 func (s *postService) Create(ctx context.Context, author_id int64, content string) (*repository.Post, error) {
 	post, err := s.postRepo.Create(ctx, author_id, content)
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
+}
+
+func (s *postService) GetPostsByAuthor(ctx context.Context, author_id int64) ([]repository.Post, error) {
+	post, err := s.postRepo.GetPostsByAuthor(ctx, author_id)
 	if err != nil {
 		return nil, err
 	}

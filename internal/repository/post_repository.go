@@ -12,5 +12,5 @@ type Post struct {
 
 type PostRepository interface {
 	Create(ctx context.Context, author_id int64, content string) (*Post, error)
-	//GetByAuthor(ctx context.Context, email string) (*Post, error) //??
+	GetPostsByAuthor(ctx context.Context, author_id int64) ([]Post, error)
 }

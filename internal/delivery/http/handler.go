@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"post-service/internal/repository"
 	"post-service/internal/service"
 )
 
@@ -273,6 +274,10 @@ type createPostResponse struct {
 	Status   string `json:"status"`
 }
 
+type getPostsResponse struct {
+	Posts []repository.Post `json:"posts"`
+}
+
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -313,6 +318,45 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func (h *PostHandler) GetPostsByAuthor(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	authorIDStr := r.URL.Query().Get("author_id")
+	if authorIDStr == "" {
+		http.Error(w, "author_id is required", http.StatusBadRequest)
+		return
+	}
+
+	authorID, err := strconv.ParseInt(authorIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "author_id must be a number", http.StatusBadRequest)
+		return
+	}
+
+	posts, err := h.postService.GetPostsByAuthor(r.Context(), authorID)
+	if err != nil {
+		http.Error(w, "Failed to get posts", http.StatusInternalServerError)
+		return
+	}
+
+	if posts == nil {
+		posts = []repository.Post{}
+	}
+
+	response := getPostsResponse{
+		Posts: posts,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
 func (h *PostHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/createpost", h.Create)
+	// БАГ 3: маршрут не был зарегистрирован
+	mux.HandleFunc("/posts", h.GetPostsByAuthor)
 }
