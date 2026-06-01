@@ -12,7 +12,12 @@ func InitTables(
 ) error {
 
 	query := `
-	CREATE TYPE post_status AS ENUM ('draft', 'pending', 'published', 'rejected');
+	DO $$ 
+	BEGIN
+		IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'post_status') THEN
+			CREATE TYPE post_status AS ENUM ('draft', 'pending', 'published', 'rejected');
+		END IF;
+	END $$;
 
 	CREATE TABLE IF NOT EXISTS messages (
 		id SERIAL PRIMARY KEY,

@@ -357,6 +357,5 @@ func (h *PostHandler) GetPostsByAuthor(w http.ResponseWriter, r *http.Request) {
 
 func (h *PostHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/createpost", h.Create)
-	// БАГ 3: маршрут не был зарегистрирован
 	mux.HandleFunc("/posts", h.GetPostsByAuthor)
 }
