@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -29,7 +30,14 @@ func main() {
 		dbHost = "localhost"
 	}
 
-	dbURL := fmt.Sprintf("postgres://postgres:postgres@%s:5432/postgres?sslmode=disable", dbHost)
+	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+		os.Getenv("DB_SSLMODE"),
+	)
 
 	log.Println("Connecting to database...")
 
@@ -47,7 +55,10 @@ func main() {
 
 	// подключаемся к RabbitMQ (в докере хост — это имя сервиса)
 	log.Println("Connecting to RabbitMQ...")
-	rabbitService, err := repository.NewRabbitMQService("amqp://guest:guest@rabbitmq:5672/")
+
+	rabbitURL := os.Getenv("RABBITMQ_URL")
+	rabbitService, err := repository.NewRabbitMQService(rabbitURL)
+
 	if err != nil {
 		log.Fatalf("RabbitMQ init failed: %v", err)
 	}
@@ -70,11 +81,18 @@ func main() {
 	userRepo := repository.NewPostgresUserRepository(dbpool)
 	postRepo := repository.NewPostgresPostRepository(dbpool)
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	jwtHours := 24
+	parsed, err := strconv.Atoi(os.Getenv("JWT_EXPIRATION_HOURS"))
+	if err == nil {
+		jwtHours = parsed
+	}
+
 	// Service
 	testService := service.NewTestService(testRepo)
 	passwordHasher := service.NewBcryptHasher()
-	tokenGenerator := service.NewJWTTokenGenerator("some-secret-key", 24*time.Hour)
-	userService := service.NewUserService(userRepo, "some-secret-key", passwordHasher, tokenGenerator)
+	tokenGenerator := service.NewJWTTokenGenerator(jwtSecret, time.Duration(jwtHours)*time.Hour)
+	userService := service.NewUserService(userRepo, jwtSecret, passwordHasher, tokenGenerator)
 	postService := service.NewPostService(postRepo)
 
 	// Handler
@@ -90,7 +108,7 @@ func main() {
 
 	mux.Handle("/metrics", promhttp.Handler())
 
-	authMiddleware := deliveryHTTP.AuthMiddleware("some-secret-key")
+	authMiddleware := deliveryHTTP.AuthMiddleware(jwtSecret)
 	mux.Handle("/posts/my", authMiddleware(http.HandlerFunc(postHandler.GetMyPosts)))
 
 	log.Println("Routes registered")
