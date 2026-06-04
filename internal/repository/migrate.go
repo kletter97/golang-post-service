@@ -12,11 +12,33 @@ func InitTables(
 ) error {
 
 	query := `
+	DO $$ 
+	BEGIN
+		IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'post_status') THEN
+			CREATE TYPE post_status AS ENUM ('draft', 'pending', 'published', 'rejected');
+		END IF;
+	END $$;
+
 	CREATE TABLE IF NOT EXISTS messages (
 		id SERIAL PRIMARY KEY,
 		message TEXT NOT NULL,
 		created_at TIMESTAMP DEFAULT NOW()
-	)
+	);
+
+	CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		email TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		created_at TIMESTAMP DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS posts (
+    id SERIAL PRIMARY KEY,
+    author_id INTEGER REFERENCES users (id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    status post_status NOT NULL DEFAULT 'published',
+    created_at TIMESTAMP DEFAULT NOW()
+	);
 	`
 
 	_, err := db.Exec(ctx, query)
