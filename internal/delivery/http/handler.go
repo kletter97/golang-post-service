@@ -7,6 +7,9 @@ import (
 
 	"post-service/internal/repository"
 	"post-service/internal/service"
+	"fmt"
+	"log"
+	"context"
 )
 
 type TestHandler struct {
@@ -254,13 +257,15 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // ===== Post handler =====
 
 type PostHandler struct {
-	postService service.PostService
+    postService service.PostService
+    rabbit      *repository.RabbitMQService // Добавляем поле в структуру
 }
 
-func NewPostHandler(postService service.PostService) *PostHandler {
-	return &PostHandler{
-		postService: postService,
-	}
+func NewPostHandler(ps service.PostService, r *repository.RabbitMQService) *PostHandler {
+    return &PostHandler{
+        postService: ps,
+        rabbit:      r, // Сохраняем в хэндлер
+    }
 }
 
 type createPostRequest struct {
@@ -313,6 +318,13 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Status:   post.Status,
 	}
 
+	auditMsg := fmt.Sprintf("User ID %d created a new post. Content: %s", post.AuthorID, post.Content)
+	go func() {
+    // Используем фоновый контекст, который никогда не закроется сервером принудительно
+    if err := h.rabbit.PublishAuditLog(context.Background(), auditMsg); err != nil {
+        log.Printf("Failed to publish to RabbitMQ: %v", err)
+    	}
+	}()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
@@ -337,7 +349,7 @@ func (h *PostHandler) GetPostsByAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 
 	posts, err := h.postService.GetPostsByAuthor(r.Context(), authorID)
-	if err != nil {
+	if err == nil {
 		http.Error(w, "Failed to get posts", http.StatusInternalServerError)
 		return
 	}
@@ -353,6 +365,27 @@ func (h *PostHandler) GetPostsByAuthor(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+
+func (h *PostHandler) GetMyPosts(w http.ResponseWriter, r *http.Request) {
+	// Достаем ID пользователя, который туда бережно положил наш Middleware
+	userID, ok := r.Context().Value(UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "Unauthorized: user ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Вызываем сервис, который сходит в твой repository.GetPostsByAuthor
+	posts, err := h.postService.GetPostsByAuthor(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "Failed to fetch posts: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Отдаем массив постов клиенту в формате JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(posts)
 }
 
 func (h *PostHandler) RegisterRoutes(mux *http.ServeMux) {

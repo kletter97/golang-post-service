@@ -33,10 +33,11 @@ func InitTables(
 	);
 
 	CREATE TABLE IF NOT EXISTS posts (
-		id SERIAL PRIMARY KEY,
-		author_id INTEGER REFERENCES users (id),
-		content post_status NOT NULL DEFAULT 'draft',
-		created_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    author_id INTEGER REFERENCES users (id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    status post_status NOT NULL DEFAULT 'published',
+    created_at TIMESTAMP DEFAULT NOW()
 	);
 	`
 

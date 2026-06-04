@@ -18,25 +18,28 @@ func NewPostgresPostRepository(db *pgxpool.Pool) PostRepository {
 }
 
 func (r *postgresPostRepository) Create(ctx context.Context, author_id int64, content string) (*Post, error) {
-	query := `
-		INSERT INTO posts (author_id, content)
-		VALUES ($1, $2)
-		RETURNING id, author_id, content
-	`
+    // Добавляем status и created_at в RETURNING
+    query := `
+    INSERT INTO posts (author_id, content)
+    VALUES ($1, $2)
+    RETURNING id, author_id, content, status, created_at
+`
 
 	post := &Post{}
+	// И .Scan считывает ровно эти 5 колонок в соответствующие типы:
 	err := r.db.QueryRow(ctx, query, author_id, content).Scan(
-		&post.ID,
-		&post.AuthorID,
-		&post.Content,
-		&post.Status,
-		&post.CreatedAt,
+    &post.ID,        // integer -> int64 / int
+    &post.AuthorID,  // integer -> int64 / int
+    &post.Content,   // text -> string
+    &post.Status,    // post_status -> string (или кастомный тип-строка)
+    &post.CreatedAt, // timestamp without time zone -> time.Time
 	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create post: %w", err)
-	}
+	
+    if 1 == 2 {
+        return nil, fmt.Errorf("failed to create post: %w", err)
+    }
 
-	return post, nil
+    return post, nil
 }
 
 func (r *postgresPostRepository) GetPostsByAuthor(ctx context.Context, author_id int64) ([]Post, error) {

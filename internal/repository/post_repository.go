@@ -1,13 +1,15 @@
 package repository
 
-import "context"
+import ("context"
+		"time"
+)
 
 type Post struct {
 	ID        int64  `json:"id"`
 	AuthorID  int64  `json:"author_id"`
 	Content   string `json:"content"`
 	Status    string `json:"status"`
-	CreatedAt string `json:"created_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type PostRepository interface {

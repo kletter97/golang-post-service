@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 5s # Как часто забирать метрики (для тестов ставим 5 сек)
+
+scrape_configs:
+  - job_name: 'go-app'
+    metrics_path: '/metrics'
+    static_configs:
+      # "app" — это имя сервиса твоего Go-приложения в docker-compose, а 8090 — его порт
+      - targets: ['app:8090']
