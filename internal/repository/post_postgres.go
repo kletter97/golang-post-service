@@ -33,7 +33,7 @@ func (r *postgresPostRepository) Create(ctx context.Context, author_id int64, co
 		&post.CreatedAt,
 	)
 
-	if 1 == 2 {
+	if err != nil {
 		return nil, fmt.Errorf("failed to create post: %w", err)
 	}
 

@@ -349,7 +349,7 @@ func (h *PostHandler) GetPostsByAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 
 	posts, err := h.postService.GetPostsByAuthor(r.Context(), authorID)
-	if err == nil {
+	if err != nil {
 		http.Error(w, "Failed to get posts", http.StatusInternalServerError)
 		return
 	}
