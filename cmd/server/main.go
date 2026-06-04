@@ -23,13 +23,12 @@ func main() {
 	log.Println("Application starting...")
 	ctx := context.Background()
 
-	// 1. Получаем хост базы данных из переменной окружения.
+	// получаем хост базы данных из переменной окружения.
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
 		dbHost = "localhost"
 	}
 
-	// 2. Подставляем dbHost в URL подключения
 	dbURL := fmt.Sprintf("postgres://postgres:postgres@%s:5432/postgres?sslmode=disable", dbHost)
 
 	log.Println("Connecting to database...")
@@ -46,7 +45,7 @@ func main() {
 	}
 	log.Println("Database connected")
 
-	// 3. Подключаемся к RabbitMQ (в докере хост — это имя сервиса)
+	// подключаемся к RabbitMQ (в докере хост — это имя сервиса)
 	log.Println("Connecting to RabbitMQ...")
 	rabbitService, err := repository.NewRabbitMQService("amqp://guest:guest@rabbitmq:5672/")
 	if err != nil {
@@ -55,7 +54,7 @@ func main() {
 	defer rabbitService.Close()
 	log.Println("RabbitMQ connected")
 
-	// 4. Запускаем фоновый воркер! Он уходит в фон и будет слушать очередь 24/7
+	// запускаем фоновый воркер (слушает очередь 24/7)
 	rabbitService.StartAuditWorker(ctx, dbpool)
 
 	// Init tables
@@ -78,7 +77,7 @@ func main() {
 	userService := service.NewUserService(userRepo, "some-secret-key", passwordHasher, tokenGenerator)
 	postService := service.NewPostService(postRepo)
 
-	// Handler (Передаем rabbitService вторым аргументом)
+	// Handler
 	testHandler := deliveryHTTP.NewTestHandler(testService)
 	userHandler := deliveryHTTP.NewUserHandler(userService)
 	postHandler := deliveryHTTP.NewPostHandler(postService, rabbitService)

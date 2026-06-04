@@ -25,14 +25,14 @@ func NewRabbitMQService(url string) (*RabbitMQService, error) {
 		log.Printf("Trying to connect to RabbitMQ (Attempt %d/10)...", i)
 		conn, err = amqp.Dial(url)
 		if err == nil {
-			break // Ура, подключились! Выходим из цикла
+			break
 		}
-		
+
 		log.Printf("RabbitMQ not ready yet, waiting 2 seconds... (Error: %v)", err)
 		time.Sleep(2 * time.Second)
 	}
 
-	// Если после 10 попыток так и не подключились — тогда уже падаем
+	// если не подключились с 10 попыток
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to rabbitmq after multiple attempts: %w", err)
 	}
@@ -74,7 +74,7 @@ func (r *RabbitMQService) PublishAuditLog(ctx context.Context, message string) e
 	)
 }
 
-// StartAuditWorker — ЭТО И ЕСТЬ НАШ ВОРКЕР. Он слушает очередь в фоне.
+// StartAuditWorker — наш воркер, слушает очередь в фоне.
 func (r *RabbitMQService) StartAuditWorker(ctx context.Context, db *pgxpool.Pool) {
 	msgs, err := r.ch.Consume(
 		"post_audit_queue", // имя очереди

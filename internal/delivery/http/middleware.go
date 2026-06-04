@@ -16,14 +16,14 @@ const UserIDKey contextKey = "userID"
 func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// 1. Достаем заголовок Authorization
+			// достаем заголовок Authorization
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
 				http.Error(w, "Missing authorization token", http.StatusUnauthorized)
 				return
 			}
 
-			// 2. Обычно токен передается в формате "Bearer <token>"
+			// токен передается в формате "Bearer <token>"
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
 				http.Error(w, "Invalid authorization format", http.StatusUnauthorized)
@@ -31,7 +31,7 @@ func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 			}
 			tokenString := parts[1]
 
-			// 3. Валидируем токен
+			// валидируем токен
 			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 				return []byte(jwtSecret), nil
 			})
@@ -41,15 +41,13 @@ func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 				return
 			}
 
-			// 4. Достаем ID пользователя из Claims (полезной нагрузки токена)
+			// достаем id пользователя из Claims (полезной нагрузки токена)
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok {
 				http.Error(w, "Invalid token claims", http.StatusUnauthorized)
 				return
 			}
 
-			// Обрати внимание, как ID сохранен в JWT (как float64 или string). 
-			// Предположим, он там лежит как float64 (стандарт для JWT численных ID) или приведем к нужному типу:
 			var userID int64
 			if idFloat, ok := claims["user_id"].(float64); ok {
 				userID = int64(idFloat)
@@ -58,7 +56,7 @@ func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 				return
 			}
 
-			// 5. Кладем UserID в контекст запроса и передаем хэндлеру дальше по цепочке
+			// кладем UserID в контекст запроса и передаем хэндлеру дальше по цепочке
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

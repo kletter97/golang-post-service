@@ -1,14 +1,14 @@
 version: '3.8'
 
 services:
-  # Наша база данных
+  # база данных
   postgres-test:
     image: postgres:latest
     container_name: postgres-test
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres # Имя базы данных по умолчанию
+      POSTGRES_DB: postgres
     ports:
       - "5433:5432"
     volumes:
@@ -19,17 +19,17 @@ services:
       timeout: 5s
       retries: 5
 
-  # Наш Go-сервер
+  # go-сервер
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: go-server-app
     ports:
-      - "8090:8090" # Внешний_порт:Внутренний_порт приложения
+      - "8090:8090"
     depends_on:
       postgres-test:
-        condition: service_healthy # Ждем, пока Postgres будет полностью готов к работе
+        condition: service_healthy
     environment:
       - DB_HOST=postgres-test
       - DB_PORT=5432
@@ -56,6 +56,6 @@ services:
     image: grafana/grafana:latest
     container_name: grafana-test
     ports:
-      - "3000:3000" # Веб-интерфейс Графаны
+      - "3000:3000" # Веб-интерфейс графаны
 volumes:
   pgdata: # Чтобы данные базы не пропадали при перезапуске контейнера
