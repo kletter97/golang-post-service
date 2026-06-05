@@ -23,9 +23,9 @@ func main() {
 		go func(workerID int) {
 			defer wg.Done()
 			client := &http.Client{Timeout: 2 * time.Second}
-			
+
 			// Тестовый JSON (имитируем создание поста)
-			jsonData := []byte(`{"author_id": 1, "content": "Спам-тест под нагрузкой!"}`)
+			jsonData := []byte(`{"author_id": "1", "content": "Спам-тест под нагрузкой!"}`)
 
 			for {
 				resp, err := client.Post(targetURL, "application/json", bytes.NewBuffer(jsonData))
@@ -34,7 +34,7 @@ func main() {
 				} else {
 					resp.Body.Close()
 				}
-				
+
 				// Небольшая пауза между запросами каждого воркера (10-50мс)
 				time.Sleep(20 * time.Millisecond)
 			}

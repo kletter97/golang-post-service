@@ -5,10 +5,8 @@ services:
   postgres-test:
     image: postgres:latest
     container_name: postgres-test
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+    env_file:
+      - .env
     ports:
       - "5433:5432"
     volumes:
@@ -30,12 +28,8 @@ services:
     depends_on:
       postgres-test:
         condition: service_healthy
-    environment:
-      - DB_HOST=postgres-test
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=postgres
+    env_file:
+      - .env
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -43,6 +37,8 @@ services:
     ports:
       - "5672:5672"   # Порт для общения Go-приложения с брокером
       - "15672:15672" # Порт для веб-админки (логин: guest, пароль: guest)
+    env_file:
+      - .env
   
   prometheus:
     image: prom/prometheus:latest
