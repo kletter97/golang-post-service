@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5" // или библиотека, которую ты используешь
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type contextKey string
